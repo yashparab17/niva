@@ -1,8 +1,8 @@
 import { supabase } from "./supabase";
 import { SLOTS, isPast } from "./time";
-import type { Appointment } from "./status";
+import type { Appointment, Cancellation, WaitlistEntry } from "./status";
 
-const COLUMNS = "id, client_name, phone, date, time, status, confirmed";
+const COLUMNS = "id, client_name, phone, date, time, status, confirmed, running_late";
 
 // Postgres returns time as "HH:MM:SS"; the app works with "HH:MM".
 const clean = (rows: Appointment[] | null): Appointment[] =>
@@ -47,4 +47,24 @@ export function partition(rows: Appointment[]) {
   const upcoming = rows.filter((a) => a.status === "booked" && !isPast(a.date, a.time));
   const past = rows.filter((a) => !upcoming.includes(a)).reverse();
   return { upcoming, past };
+}
+
+export async function listWaitlist() {
+  const { data, error } = await supabase
+    .from("waitlist")
+    .select("id, client_name, phone, date")
+    .order("date")
+    .order("created_at");
+  if (error) throw error;
+  return data as WaitlistEntry[];
+}
+
+export async function listRecentCancellations(limit = 5) {
+  const { data, error } = await supabase
+    .from("cancellations")
+    .select("id, client_name, date, time, reason, cancelled_at")
+    .order("cancelled_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data as Cancellation[]).map((c) => ({ ...c, time: c.time.slice(0, 5) }));
 }

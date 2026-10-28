@@ -43,6 +43,10 @@ export function firstBookableDate() {
   return SLOTS.some((t) => t > now.time) ? now.date : addDays(now.date, 1);
 }
 
+// The same weekday one or more weeks on, landing after today.
+export const sameTimeNextWeek = (date: string, today: string) =>
+  date > today ? date : addDays(date, Math.ceil((daysBetween(date, today) + 1) / 7) * 7);
+
 export const isPast = (date: string, time: string) => {
   const now = nowInClinic();
   return date < now.date || (date === now.date && time <= now.time);
@@ -55,6 +59,11 @@ export const formatDate = (date: string) =>
   fmtDate(date, { weekday: "short", day: "numeric", month: "short" });
 export const formatDateLong = (date: string) =>
   fmtDate(date, { weekday: "long", day: "numeric", month: "long" });
+// "October 2026", or "Oct - Nov 2026" when the range crosses a month.
+export function monthRange(from: string, to: string) {
+  if (from.slice(0, 7) === to.slice(0, 7)) return fmtDate(from, { month: "long", year: "numeric" });
+  return `${fmtDate(from, { month: "short" })} - ${fmtDate(to, { month: "short", year: "numeric" })}`;
+}
 export const weekday = (date: string) => fmtDate(date, { weekday: "short" });
 export const dayOfMonth = (date: string) => fmtDate(date, { day: "numeric" });
 export const monthShort = (date: string) => fmtDate(date, { month: "short" });

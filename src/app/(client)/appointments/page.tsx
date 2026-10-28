@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { Illustration } from "@/components/illustration";
-import { Skeleton } from "@/components/skeleton";
+import { AppointmentsSkeleton } from "@/components/skeletons";
 import { FindForm } from "@/components/client/find-form";
 import { AppointmentRow } from "@/components/client/appointment-row";
 import { AppointmentTabs } from "@/components/client/appointment-tabs";
@@ -16,7 +16,7 @@ export default function AppointmentsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-6 text-4xl font-semibold">My Appointments</h1>
-      <Suspense fallback={<Skeleton className="h-72" />}>
+      <Suspense fallback={<AppointmentsSkeleton />}>
         <Appointments />
       </Suspense>
     </div>

@@ -8,7 +8,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Illustration } from "@/components/illustration";
 import { AddAppointmentForm } from "@/components/dashboard/add-appointment-form";
 import { AppointmentRow } from "@/components/dashboard/appointment-row";
-import type { Appointment } from "@/lib/status";
+import { clientKey, type Appointment } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "today";
@@ -17,7 +17,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "today", label: "Today" },
 ];
 
-export function AppointmentTable({ rows, today, startDate }: { rows: Appointment[]; today: string; startDate: string }) {
+export function AppointmentTable({ rows, today, startDate, history }: { rows: Appointment[]; today: string; startDate: string; history: Record<string, { missed: number; total: number }> }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [adding, setAdding] = useState(false);
 
@@ -61,7 +61,7 @@ export function AppointmentTable({ rows, today, startDate }: { rows: Appointment
         {ordered.length ? (
           <ul className="flex flex-col gap-3 md:gap-0">
             {ordered.map((a) => (
-              <AppointmentRow key={a.id} appointment={a} today={today} />
+              <AppointmentRow key={a.id} appointment={a} today={today} history={history[clientKey(a)]} />
             ))}
           </ul>
         ) : (

@@ -1,6 +1,7 @@
 import { StatusBadge } from "@/components/status-badge";
 import { AppointmentActions } from "@/components/client/appointment-actions";
-import { dayOfMonth, formatDate, formatTime, monthShort } from "@/lib/time";
+import Link from "next/link";
+import { dayOfMonth, formatDate, formatTime, monthShort, sameTimeNextWeek } from "@/lib/time";
 import type { Appointment } from "@/lib/status";
 
 type Props = { appointment: Appointment; today: string; upcoming: boolean };
@@ -23,6 +24,16 @@ export function AppointmentRow({ appointment: a, today, upcoming }: Props) {
           <StatusBadge status={a.status} label={a.status === "no_show" ? "Missed" : undefined} />
         )}
       </div>
+      {!upcoming && (
+        <div className="mt-3 border-t pt-3">
+          <Link
+            href={`/book?date=${sameTimeNextWeek(a.date, today)}&time=${a.time}`}
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Book Same Time Next Week
+          </Link>
+        </div>
+      )}
       {upcoming && (
         <div className="mt-4 border-t pt-3">
           <AppointmentActions appointment={a} today={today} />

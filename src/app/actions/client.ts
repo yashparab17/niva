@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
-import { isValidPhone, normalizePhone } from "@/lib/status";
+import { CANCEL_REASONS, isValidPhone, normalizePhone } from "@/lib/status";
 import { PHONE_COOKIE, currentPhone } from "@/lib/session";
 import { SLOT_TAKEN, field, isSlotClash, validateSlot, type Result } from "./shared";
 
@@ -48,6 +48,24 @@ export async function bookAppointment(_: Result, formData: FormData): Promise<Re
   if (isSlotClash(error)) return { error: SLOT_TAKEN };
   if (error) throw error;
 
+  // They got a slot, so they no longer need to wait for this day.
+  await supabase.from("waitlist").delete().eq("phone", phone).eq("date", date);
+  await remember(phone);
+  refresh();
+  return { ok: true };
+}
+
+export async function joinWaitlist(name: string, rawPhone: string, date: string): Promise<Result> {
+  const phone = normalizePhone(rawPhone);
+  if (!name.trim()) return { error: "Please tell us your name first." };
+  if (!isValidPhone(phone)) return { error: "Enter a valid 10-digit phone number first." };
+  if (validateSlot(date, "09:00") === "Please pick a date and time.") return { error: "Please pick a day." };
+
+  const { error } = await supabase
+    .from("waitlist")
+    .upsert({ client_name: name.trim(), phone, date }, { onConflict: "phone,date", ignoreDuplicates: true });
+  if (error) throw error;
+
   await remember(phone);
   refresh();
   return { ok: true };
@@ -61,7 +79,7 @@ export async function rescheduleAppointment(id: string, date: string, time: stri
 
   const { data, error } = await supabase
     .from("appointments")
-    .update({ date, time, confirmed: false })
+    .update({ date, time, confirmed: false, running_late: false })
     .eq("id", id)
     .eq("phone", phone)
     .eq("status", "booked")
@@ -74,13 +92,36 @@ export async function rescheduleAppointment(id: string, date: string, time: stri
   return { ok: true };
 }
 
-export async function cancelAppointment(id: string): Promise<Result> {
+export async function cancelAppointment(id: string, reason?: string): Promise<Result> {
+  const phone = await currentPhone();
+  if (!phone) return { error: "Please find your appointments first." };
+
+  const { data, error } = await supabase
+    .from("appointments")
+    .delete()
+    .eq("id", id)
+    .eq("phone", phone)
+    .eq("status", "booked")
+    .select("client_name, phone, date, time");
+  if (error) throw error;
+
+  // Keep a record (with the optional reason) so the nutritionist can see why slots opened up.
+  if (data?.[0]) {
+    const cleanReason = CANCEL_REASONS.includes(reason ?? "") ? reason : null;
+    await supabase.from("cancellations").insert({ ...data[0], reason: cleanReason });
+  }
+
+  refresh();
+  return { ok: true };
+}
+
+export async function setRunningLate(id: string, late: boolean): Promise<Result> {
   const phone = await currentPhone();
   if (!phone) return { error: "Please find your appointments first." };
 
   const { error } = await supabase
     .from("appointments")
-    .delete()
+    .update({ running_late: late })
     .eq("id", id)
     .eq("phone", phone)
     .eq("status", "booked");

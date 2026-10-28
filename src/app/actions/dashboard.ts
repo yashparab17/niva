@@ -47,3 +47,11 @@ export async function removeAppointment(id: string): Promise<Result> {
   refresh();
   return { ok: true };
 }
+
+export async function removeWaitlistEntry(id: string): Promise<Result> {
+  const { error } = await supabase.from("waitlist").delete().eq("id", id);
+  if (error) throw error;
+
+  refresh();
+  return { ok: true };
+}

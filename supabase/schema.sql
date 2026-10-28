@@ -11,6 +11,7 @@ create table appointments (
   time        time not null,
   status      appointment_status not null default 'booked',
   confirmed   boolean not null default false,
+  running_late boolean not null default false,
   created_at  timestamptz not null default now()
 );
 
@@ -21,10 +22,33 @@ create unique index appointments_one_booking_per_slot
 create index appointments_date_time_idx on appointments (date, time);
 create index appointments_phone_idx on appointments (phone);
 
+-- Cancellations are logged (with the optional reason) before the appointment row is deleted.
+create table cancellations (
+  id           uuid primary key default gen_random_uuid(),
+  client_name  text not null,
+  phone        text,
+  date         date not null,
+  time         time not null,
+  reason       text,
+  cancelled_at timestamptz not null default now()
+);
+
+-- "Tell me if this day opens up": one entry per phone per day.
+create table waitlist (
+  id          uuid primary key default gen_random_uuid(),
+  client_name text not null check (length(trim(client_name)) > 0),
+  phone       text not null check (phone ~ '^[0-9]{10}$'),
+  date        date not null,
+  created_at  timestamptz not null default now(),
+  unique (phone, date)
+);
+
 -- The app talks to Supabase from the server with the service-role key, so lock out the public API.
 alter table appointments enable row level security;
+alter table cancellations enable row level security;
+alter table waitlist enable row level security;
 grant usage on schema public to service_role;
-grant all on appointments to service_role;
+grant all on appointments, cancellations, waitlist to service_role;
 
 -- Sample data, cleaned: dates -> ISO (day-first), times -> 24h, phones -> 10 digits.
 -- "98200 11111" and "9820011111" are the same person, so Riya's two bookings share one number.

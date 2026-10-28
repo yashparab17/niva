@@ -11,7 +11,9 @@ import { cn } from "@/lib/utils";
 
 const cell = "text-sm";
 
-export function AppointmentRow({ appointment: a, today }: { appointment: Appointment; today: string }) {
+type Props = { appointment: Appointment; today: string; history?: { missed: number; total: number } };
+
+export function AppointmentRow({ appointment: a, today, history }: Props) {
   const [status, setOptimistic] = useOptimistic(a.status);
   const [error, setError] = useState<string>();
   const [, start] = useTransition();
@@ -29,7 +31,8 @@ export function AppointmentRow({ appointment: a, today }: { appointment: Appoint
 
   // One-tap WhatsApp reminder: opens a chat with the message pre-written (no API needed).
   const remind = () => {
-    const text = `Hi ${a.client_name.split(" ")[0]}, a reminder of your nutrition consultation on ${formatDate(a.date)} at ${formatTime(a.time)}. Please reply YES to confirm, or tell me if you need to reschedule.`;
+    const nudge = history?.missed ? " Please confirm so I can hold your slot, otherwise I may offer it to someone else." : "";
+    const text = `Hi ${a.client_name.split(" ")[0]}, a reminder of your nutrition consultation on ${formatDate(a.date)} at ${formatTime(a.time)}. Please reply YES to confirm, or tell me if you need to reschedule.${nudge}`;
     return `https://wa.me/91${a.phone}?text=${encodeURIComponent(text)}`;
   };
 
@@ -38,6 +41,14 @@ export function AppointmentRow({ appointment: a, today }: { appointment: Appoint
       <div className="min-w-0">
         <p className="truncate font-semibold">{a.client_name}</p>
         <div className="mt-1 flex flex-wrap gap-1.5 empty:hidden">
+          {a.running_late && status === "booked" && !overdue && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">Running late</span>
+          )}
+          {history?.missed ? (
+            <span className="rounded-full bg-noshow px-2 py-0.5 text-xs font-semibold text-noshow-foreground">
+              Missed {history.missed} of {history.total}
+            </span>
+          ) : null}
           {overdue && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-400/20 dark:text-amber-200">Needs update</span>}
           {a.confirmed && status === "booked" && !overdue && (
             <span className="inline-flex items-center gap-1 rounded-full bg-done px-2 py-0.5 text-xs font-semibold text-done-foreground">

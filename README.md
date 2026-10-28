@@ -17,6 +17,11 @@ Anything booked on one side shows up on the other. Both sides refresh themselves
   - **WhatsApp reminder**: one tap on the dashboard opens a chat with the message already written.
   - **Easy reschedule and cancel**: two taps, and the slot is freed for someone else.
   - **Needs update**: past appointments still marked Booked are flagged so none go unrecorded.
+  - **Running Late** (on the day) and **cancel with an optional reason**: the dashboard shows who is late and why slots opened up.
+  - **Waitlist**: on a fully booked day a client can ask to be told if it opens up; the dashboard shows who is waiting and offers a one-tap WhatsApp message once a slot is free.
+  - **No-show insights**: a 30-day no-show rate, plus a "Missed 2 of 3" tag on clients with past no-shows. Their reminder asks them to confirm to keep the slot.
+- **Add to Calendar**: downloads an `.ics` file with a 1-day and a 1-hour alert.
+- **Book Same Time Next Week** on past appointments, week-by-week swipeable date picker, confetti on booking.
 
 ## Tech
 
@@ -41,6 +46,8 @@ You need Node 20+, [pnpm](https://pnpm.io) and a free [Supabase](https://supabas
    pnpm dev
    ```
    Open <http://localhost:3000> for the client app and <http://localhost:3000/dashboard> for the dashboard.
+
+**Already ran an earlier `schema.sql`?** Run [`supabase/migrations/001_late_cancellations_waitlist.sql`](supabase/migrations/001_late_cancellations_waitlist.sql) once instead. It adds the new column and tables without touching your data. The app errors until the database has them.
 
 ## Deploy to Vercel
 

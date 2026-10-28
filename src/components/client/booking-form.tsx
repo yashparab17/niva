@@ -2,6 +2,9 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { AddToCalendar } from "@/components/client/add-to-calendar";
+import { WaitlistButton } from "@/components/client/waitlist-button";
+import { Confetti } from "@/components/confetti";
 import { Illustration } from "@/components/illustration";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button-variants";
@@ -12,10 +15,10 @@ import { SLOT_TAKEN } from "@/app/actions/shared";
 import { formatDateLong, formatTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
-type Props = { today: string; startDate: string; defaultName?: string; defaultPhone?: string };
+type Props = { today: string; startDate: string; startTime?: string; defaultName?: string; defaultPhone?: string };
 
-export function BookingForm({ today, startDate, defaultName, defaultPhone }: Props) {
-  const [pick, setPick] = useState<Pick>({ date: startDate, time: null });
+export function BookingForm({ today, startDate, startTime, defaultName, defaultPhone }: Props) {
+  const [pick, setPick] = useState<Pick>({ date: startDate, time: startTime ?? null });
   const [state, action, pending] = useActionState(bookAppointment, {});
   // Bumping this re-fetches slots when the server says the chosen one was taken meanwhile.
   const [version, setVersion] = useState(0);
@@ -36,6 +39,7 @@ export function BookingForm({ today, startDate, defaultName, defaultPhone }: Pro
   if (state.ok && pick.time) {
     return (
       <section className="mx-auto flex max-w-md animate-in flex-col items-center rounded-[2rem] border bg-card p-8 text-center duration-500 zoom-in-95 fade-in">
+        <Confetti />
         <Illustration name="success" className="w-56" />
         <h2 className="mt-6 text-3xl font-semibold">You&apos;re Booked!</h2>
         <p className="mt-2 text-muted-foreground">
@@ -44,13 +48,20 @@ export function BookingForm({ today, startDate, defaultName, defaultPhone }: Pro
         <Link href="/" className={cn(buttonVariants({ size: "xl" }), "mt-8")}>
           See My Appointment
         </Link>
+        <AddToCalendar date={pick.date} time={pick.time} className="mt-2" />
       </section>
     );
   }
 
   return (
     <form action={action} className="grid animate-in fade-in duration-500 grid-cols-[minmax(0,1fr)] gap-10 md:grid-cols-[minmax(0,1fr)_22rem]">
-      <SlotPicker today={today} value={pick} onChange={setPick} version={version} />
+      <SlotPicker
+        today={today}
+        value={pick}
+        onChange={setPick}
+        version={version}
+        fullDayAction={<WaitlistButton date={pick.date} name={name} phone={phone} />}
+      />
 
       <div className="flex flex-col gap-4 md:sticky md:top-24 md:self-start md:rounded-3xl md:border md:bg-card md:p-6">
         <h2 className="text-xl font-semibold">Your Details</h2>
